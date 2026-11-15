@@ -79,7 +79,7 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    raise HTTPException(status_code=500, detail="intentional rollback test")
 
 
 @app.get("/metrics")

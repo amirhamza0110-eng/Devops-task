@@ -39,3 +39,45 @@ $ kubectl -n devops-task rollout status deploy/devops-task
 Waiting for deployment "devops-task" rollout to finish: 1 old replicas are pending termination...
 Waiting for deployment "devops-task" rollout to finish: 1 old replicas are pending termination...
 deployment "devops-task" successfully rolled out
+
+## ⚙️ Linux Automation Script (System Health)
+
+A robust bash script (`scripts/system_health.sh`) is included to monitor host CPU, Memory, Disk usage, Load Average, and top memory-consuming processes. It supports configurable thresholds, JSON output, proper exit codes for monitoring tools, and log rotation.
+
+### Manual Execution
+To test the script manually and view the structured JSON output:
+```bash
+chmod +x scripts/system_health.sh
+./scripts/system_health.sh --json
+
+{
+  "timestamp": "2026-11-15T12:15:06Z",
+  "host": "DESKTOP-AT8EGAS",
+  "cpu_percent": 54,
+  "mem_percent": 100,
+  "load": { "1m": 0.52, "5m": 0.58, "15m": 0.59 },
+  "disks": [
+    { "mount": "/", "percent": 30 },
+    { "mount": "/mnt/c", "percent": 30 },
+    { "mount": "/mnt/e", "percent": 1 }
+  ],
+  "top_memory": [
+    { "pid": 11, "command": "bash", "mem_percent": 0.0 },
+    { "pid": 100, "command": "ps", "mem_percent": 0.0 }
+  ],
+  "status": 2,
+  "warnings": [
+    "[CRITICAL] Memory usage at 100% (>= 95%)"
+  ]
+}
+Automation (Systemd / Cron)
+For production use, the repository includes systemd service and timer files to run the script every 5 minutes automatically.
+
+Bash
+# Setup using Systemd
+sudo cp scripts/systemd/system-health.* /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now system-health.timer
+
+# Alternatively, a crontab example is provided:
+crontab scripts/systemd/crontab.example
