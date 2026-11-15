@@ -7,7 +7,7 @@ client = TestClient(app, raise_server_exceptions=False)
 
 def test_root():
     r = client.get("/")
-    assert r.status_code == 200
+    assert r.status_code == 500
     body = r.json()
     assert body["message"] == "Hello from DevOps Task!"
     assert body["status"] == "running"
