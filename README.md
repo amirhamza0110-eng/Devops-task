@@ -174,4 +174,5 @@ Release path: PR (lint, tests, scan) -> merge -> immutable multi-arch image -> S
 ## 11. What I would improve with more time
 Alertmanager with Slack routing; HTTPS via ALB + ACM; blue/green or canary; Cosign signing + SBOM; Helm chart with staging/prod values; kube-prometheus-stack; tracing with OpenTelemetry/Tempo; Ansible hardening; Terraform modules and CI `terraform plan` on PRs; socket proxy for Alloy; run the monitoring stack in Kubernetes.
 
-
+## 12. AI tools
+I used the free version of Claude for help writing some configuration files. The main work and the remaining tasks were completed by me.
