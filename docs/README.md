@@ -6,15 +6,14 @@ The local monitoring stack is fully provisioned as code, utilizing Prometheus, L
 
 ### Dashboard Screenshots
 Below are the captures of the dashboards visualizing the generated traffic and metrics:
-
 **1. Application Dashboard**
-![Application Dashboard](docs/dashboard-application.png)
+![Application Dashboard](dashboard-application.png)
 
 **2. Host Dashboard**
-![Host Dashboard](docs/dashboard-host.png)
+![Host Dashboard](dashboard-host.png)
 
 **3. Containers Dashboard**
-![Containers Dashboard](docs/dashboard-containers.png)
+![Containers Dashboard](dashboard-containers.png)
 
 ### Troubleshooting Walkthrough
 **Scenario:** *An error spike appears on the Application dashboard. How do you find the cause using these tools?*
