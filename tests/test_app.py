@@ -17,10 +17,9 @@ def test_root():
 
 
 def test_health():
-    r = client.get("/health")
-    assert r.status_code == 500
-    body = r.json()
-    assert body["detail"] == "intentional rollback test"
+    response = client.get("/health")
+    assert response.status_code == 500
+    assert response.json() == {"detail": "intentional rollback test"}
 
 def test_metrics_exposes_required_series():
     client.get("/")
