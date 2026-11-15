@@ -1,0 +1,8 @@
+[Unit]
+Description=System health check
+
+[Service]
+Type=oneshot
+Environment=HEALTH_LOG=/var/log/health_log.txt
+ExecStart=/usr/local/bin/system_health.sh --json
+SuccessExitStatus=1 2

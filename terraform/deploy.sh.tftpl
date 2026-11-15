@@ -1,0 +1,39 @@
+#!/bin/bash
+# Usage: deploy.sh <full-image-ref>. Deploys, smoke-tests /health, rolls back on failure.
+set -euo pipefail
+NEW_IMAGE="$1"
+PREV_IMAGE="$(docker inspect -f '{{.Config.Image}}' app 2>/dev/null || true)"
+
+aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${registry}
+
+run_container() {
+  docker rm -f app >/dev/null 2>&1 || true
+  docker run -d --name app --restart unless-stopped -p 80:8080 \
+    --read-only --cap-drop ALL --security-opt no-new-privileges \
+    -e ENVIRONMENT=${environment} \
+    --log-driver awslogs --log-opt awslogs-region=${region} --log-opt awslogs-group=${log_group} \
+    "$1"
+}
+
+smoke_test() {
+  for _ in $(seq 1 20); do
+    if curl -fsS http://localhost/health >/dev/null; then return 0; fi
+    sleep 3
+  done
+  return 1
+}
+
+docker pull "$NEW_IMAGE"
+run_container "$NEW_IMAGE"
+if smoke_test; then
+  echo "DEPLOY OK: $NEW_IMAGE (previous: $${PREV_IMAGE:-none})"
+  exit 0
+fi
+
+echo "SMOKE TEST FAILED for $NEW_IMAGE" >&2
+if [ -n "$PREV_IMAGE" ]; then
+  echo "Rolling back to $PREV_IMAGE" >&2
+  run_container "$PREV_IMAGE"
+  smoke_test && echo "ROLLBACK OK" >&2 || echo "ROLLBACK ALSO FAILED" >&2
+fi
+exit 1

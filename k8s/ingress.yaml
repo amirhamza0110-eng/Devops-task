@@ -1,0 +1,16 @@
+# Requires an ingress controller (e.g. ingress-nginx on kind). Port-forward alternative is in README.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: devops-task
+  namespace: devops-task
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: devops-task.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: devops-task, port: { name: http } }

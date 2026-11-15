@@ -1,0 +1,111 @@
+# App only:            docker compose up -d --build
+# App + observability: docker compose --profile monitoring up -d --build
+name: devops-task
+
+services:
+  app:
+    build:
+      context: .
+      args: { VERSION: "${APP_VERSION:-1.0.0}" }
+    image: devops-task:local
+    ports: ["8080:8080"]
+    env_file: .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits: { cpus: "0.50", memory: 128M }
+        reservations: { cpus: "0.10", memory: 64M }
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    networks: [edge, obs]
+
+  prometheus:
+    profiles: [monitoring]
+    image: prom/prometheus:v2.55.1
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=2GB
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus:ro
+      - prom-data:/prometheus
+    restart: unless-stopped
+    networks: [obs]
+
+  node-exporter:
+    profiles: [monitoring]
+    image: prom/node-exporter:v1.8.2
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|run/.+)($$|/)
+    pid: host   # see host processes/stat
+    volumes: ["/:/host:ro,rslave"]   # read-only host root for filesystem metrics
+    restart: unless-stopped
+    networks: [obs]
+
+  cadvisor:
+    profiles: [monitoring]
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    # Read-only mounts needed to read cgroups + docker metadata. Not --privileged.
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    devices: ["/dev/kmsg"]
+    restart: unless-stopped
+    networks: [obs]
+
+  loki:
+    profiles: [monitoring]
+    image: grafana/loki:3.2.1
+    command: ["-config.file=/etc/loki/loki-config.yml"]
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+    restart: unless-stopped
+    networks: [obs]
+
+  alloy:
+    profiles: [monitoring]
+    image: grafana/alloy:v1.4.3
+    command: ["run", "--storage.path=/var/lib/alloy/data", "/etc/alloy/config.alloy"]
+    volumes:
+      - ./monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # Docker service discovery (read-only API access)
+    depends_on: [loki]
+    restart: unless-stopped
+    networks: [obs]
+
+  grafana:
+    profiles: [monitoring]
+    image: grafana/grafana:11.3.0
+    ports: ["3000:3000"]   # the ONLY monitoring port published to the host
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:?set in .env}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on: [prometheus, loki]
+    restart: unless-stopped
+    networks: [edge, obs]
+
+networks:
+  edge: {}
+  obs:
+    internal: true   # no outbound/inbound from host; Grafana + app bridge to edge
+
+volumes:
+  prom-data: {}
+  loki-data: {}
+  grafana-data: {}

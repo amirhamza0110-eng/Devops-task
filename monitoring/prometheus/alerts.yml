@@ -1,0 +1,39 @@
+groups:
+  - name: devops-task
+    rules:
+      - alert: AppInstanceDown
+        expr: up{job="app"} == 0
+        for: 1m   # 4 missed scrapes: ignores a single blip/restart, still pages fast
+        labels: { severity: critical }
+        annotations: { summary: "App instance {{ $labels.instance }} is down" }
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_errors_total[5m])) / clamp_min(sum(rate(http_requests_total[5m])), 1e-9) > 0.05
+          and sum(rate(http_requests_total[5m])) > 0.1
+        for: 5m   # sustained 5xx>5% of traffic; the traffic guard avoids noise at ~0 rps
+        labels: { severity: critical }
+        annotations: { summary: "5xx ratio above 5% for 5m" }
+
+      - alert: HostDiskUsageHigh
+        expr: |
+          100 - (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"}
+          / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"} * 100) > 80
+        for: 10m   # disks fill slowly; 10m avoids flapping around the threshold
+        labels: { severity: warning }
+        annotations: { summary: "Disk {{ $labels.mountpoint }} above 80%" }
+
+      - alert: ContainerMemoryNearLimit
+        expr: |
+          container_memory_working_set_bytes{name!=""}
+          / (container_spec_memory_limit_bytes{name!=""} > 0) > 0.9
+        for: 5m   # 90% leaves headroom before OOM-kill; 5m filters short spikes
+        labels: { severity: warning }
+        annotations: { summary: "Container {{ $labels.name }} using >90% of its memory limit" }
+
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m]))) > 0.5
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: "p95 latency above 500ms for 10m" }

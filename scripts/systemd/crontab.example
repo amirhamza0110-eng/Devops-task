@@ -1,0 +1,1 @@
+*/5 * * * * HEALTH_LOG=/var/log/health_log.txt /usr/local/bin/system_health.sh --json >/dev/null 2>&1

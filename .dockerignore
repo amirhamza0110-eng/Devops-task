@@ -1,0 +1,15 @@
+.git
+.github
+.venv
+__pycache__
+*.pyc
+tests
+terraform
+k8s
+monitoring
+scripts
+*.md
+.env
+.pytest_cache
+.coverage
+docker-compose*.yml

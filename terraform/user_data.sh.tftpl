@@ -1,0 +1,9 @@
+#!/bin/bash
+set -euxo pipefail
+dnf install -y docker
+systemctl enable --now docker
+mkdir -p /opt/app
+echo "${deploy_b64}" | base64 -d > /opt/app/deploy.sh
+chmod 0755 /opt/app/deploy.sh
+# First image only exists after the first CI run; don't fail boot if absent.
+/opt/app/deploy.sh "${image}" || echo "no image yet, waiting for first CI deploy"

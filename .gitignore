@@ -1,0 +1,11 @@
+.env
+__pycache__/
+.venv/
+.pytest_cache/
+.coverage
+coverage.xml
+*.tfstate*
+.terraform/
+*.tfvars.secret
+health_log.txt*
+k8s/secret.yaml
