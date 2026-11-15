@@ -29,6 +29,9 @@ data "aws_iam_policy_document" "ci_assume" {
         "repo:${var.github_repo}:ref:refs/heads/main",
         "repo:${var.github_repo}:environment:staging",
         "repo:${var.github_repo}:environment:production",
+        "repo:${lower(var.github_repo)}:ref:refs/heads/main",
+        "repo:${lower(var.github_repo)}:environment:staging",
+        "repo:${lower(var.github_repo)}:environment:production",
       ]
     }
   }

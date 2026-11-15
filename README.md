@@ -117,6 +117,8 @@ Evidence: TODO(evidence) `terraform plan` / `apply` output or screenshots.
 
 Tags pushed: `sha-<full sha>`, `sha-<12 chars>` (what is deployed) and semver `MAJOR.MINOR.<run number>` (MAJOR.MINOR from `VERSION`). ECR tags are immutable. Evidence of a successful deploy run: TODO(evidence).
 
+If GitHub Actions reports `Not authorized to perform sts:AssumeRoleWithWebIdentity`, update the IAM trust policy by applying the staging Terraform configuration (`cd terraform && terraform apply -var-file=envs/staging.tfvars`). The trust policy allows the repository name in its configured and lowercase forms, and is restricted to this repository's `main` branch and staging/production environments. Confirm the workflow has `id-token: write` and uses the `ci_role_arn` output.
+
 ## 6. Observability
 
 - **Metrics:** Prometheus scrapes app, Node Exporter, cAdvisor; retention 15d / 2GB.
