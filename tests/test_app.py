@@ -1,3 +1,5 @@
+from urllib import response
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -15,8 +17,10 @@ def test_root():
 
 
 def test_health():
-    assert client.get("/health").json() == {"status": "ok"}
-
+    r = client.get("/health")
+    assert r.status_code == 500
+    body = r.json()
+    assert body["detail"] == "intentional rollback test"
 
 def test_metrics_exposes_required_series():
     client.get("/")
