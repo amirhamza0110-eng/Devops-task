@@ -8,7 +8,7 @@ permissions:
 concurrency: { group: deploy, cancel-in-progress: false }
 
 env:
-  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_REGION: us-east-1
 
 jobs:
   build-push:
@@ -23,13 +23,13 @@ jobs:
           echo "version=$VER" >> "$GITHUB_OUTPUT"
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: arn:aws:iam::805550189244:role/devops-task-staging-github-ci
+          aws-region: us-east-1
       - id: ecr
         uses: aws-actions/amazon-ecr-login@v2
       - id: img
         run: |
-          REPO="${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}"
+          REPO="${{ steps.ecr.outputs.registry }}/devops-task-staging"
           echo "repo=$REPO" >> "$GITHUB_OUTPUT"
           echo "image=$REPO:sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-qemu-action@v3
@@ -48,19 +48,20 @@ jobs:
             ${{ steps.img.outputs.repo }}:${{ steps.meta.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
   deploy:
     needs: build-push
     runs-on: ubuntu-latest
-    environment: ${{ vars.DEPLOY_ENVIRONMENT || 'staging' }}   # add required reviewers on 'production'
+    environment: staging
     steps:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: arn:aws:iam::805550189244:role/devops-task-staging-github-ci
+          aws-region: us-east-1
       - name: Deploy via SSM (script smoke-tests /health and rolls back on failure)
         env:
           IMAGE: ${{ needs.build-push.outputs.image }}
-          INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+          INSTANCE_ID: i-085eb67735b32244d
         run: |
           CMD_ID=$(aws ssm send-command --instance-ids "$INSTANCE_ID" \
             --document-name AWS-RunShellScript \
