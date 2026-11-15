@@ -3,11 +3,6 @@ terraform {
   required_providers {
     aws = { source = "hashicorp/aws", version = "~> 5.70" }
   }
-  # Partial config; bucket/key/region supplied with -backend-config (see README).
-  backend "s3" {
-    use_lockfile = true
-    encrypt      = true
-  }
 }
 
 provider "aws" {
